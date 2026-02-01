@@ -249,6 +249,44 @@ def update_leave_status():
 
 # --- Data Management Routes ---
 
+# --- Stats Routes ---
+
+@app.route('/api/stats/attendance', methods=['GET'])
+def attendance_stats():
+    # Optional filter by department
+    dept = request.args.get('dept')
+    
+    # Get today's date string YYYY-MM-DD
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
+    
+    student_query = {}
+    if dept and dept != 'null':
+        student_query['dept'] = dept
+        
+    total_students = students_col.count_documents(student_query)
+    
+    # Students on leave TODAY:
+    # Status must be 'HOD Approved' (final approval)
+    # Today must be within [fromDate, toDate]
+    leave_query = {
+        'status': 'HOD Approved',
+        'fromDate': {'$lte': today},
+        'toDate': {'$gte': today}
+    }
+    if dept and dept != 'null':
+        leave_query['dept'] = dept
+        
+    students_on_leave = leaves_col.count_documents(leave_query)
+    
+    present_students = total_students - students_on_leave
+    
+    return jsonify({
+        'total': total_students,
+        'onLeave': students_on_leave,
+        'present': present_students,
+        'date': today
+    })
+
 @app.route('/api/reset', methods=['POST'])
 def reset_data():
     db.students.delete_many({})
