@@ -23,7 +23,10 @@ if not MONGO_URI:
 
 try:
     client = MongoClient(MONGO_URI)
-    db = client.get_default_database() or client['pec_leave_portal']
+    try:
+        db = client.get_default_database()
+    except Exception:
+        db = client['pec_leave_portal']
     print(f"Connected to MongoDB: {db.name}")
 except Exception as e:
     print(f"Error connecting to MongoDB: {e}")
