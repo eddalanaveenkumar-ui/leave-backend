@@ -13,6 +13,9 @@ CORS(app)  # Enable CORS for all routes
 
 # MongoDB Connection
 MONGO_URI = os.getenv('MONGO_URI')
+client = None
+db = None
+
 if not MONGO_URI:
     print("Warning: MONGO_URI not found in environment variables.")
     # Fallback for local testing if needed, though production needs Atlas
@@ -24,13 +27,24 @@ try:
     print(f"Connected to MongoDB: {db.name}")
 except Exception as e:
     print(f"Error connecting to MongoDB: {e}")
+    # Initialize a dummy db object or handle failure gracefully if critical
+    # For now, we will just let it fail later if accessed, but the variable exists
+
 
 # Collections
-students_col = db['students']
-advisors_col = db['advisors']
-hods_col = db['hods']
-management_col = db['management']
-leaves_col = db['leave_applications']
+# Collections
+if db is not None:
+    students_col = db['students']
+    advisors_col = db['advisors']
+    hods_col = db['hods']
+    management_col = db['management']
+    leaves_col = db['leave_applications']
+else:
+    students_col = None
+    advisors_col = None
+    hods_col = None
+    management_col = None
+    leaves_col = None
 
 # --- Helper Functions ---
 def serialize_doc(doc):
