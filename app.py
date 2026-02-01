@@ -161,6 +161,40 @@ def manage_students():
         students_col.delete_one({'regNo': reg_no})
         return jsonify({"message": "Student deleted"}), 200
 
+# --- Staff Routes ---
+
+@app.route('/api/staff', methods=['GET', 'POST'])
+def manage_staff():
+    if request.method == 'POST':
+        data = request.json
+        role = data.get('role')
+        
+        target_col = None
+        if role == 'advisor': target_col = advisors_col
+        elif role == 'hod': target_col = hods_col
+        elif role == 'management': target_col = management_col
+        
+        if not target_col:
+            return jsonify({"error": "Invalid role"}), 400
+            
+        # Check for duplicate ID
+        if target_col.find_one({'id': data['id']}):
+             return jsonify({"error": "Staff ID already exists"}), 409
+             
+        result = target_col.insert_one(data)
+        return jsonify({"message": "Staff added", "id": str(result.inserted_id)}), 201
+        
+    elif request.method == 'GET':
+        advisors = list(advisors_col.find())
+        hods = list(hods_col.find())
+        management = list(management_col.find())
+        
+        return jsonify({
+            'advisors': [serialize_doc(a) for a in advisors],
+            'hods': [serialize_doc(h) for h in hods],
+            'management': [serialize_doc(m) for m in management]
+        })
+
 # --- Leave Routes ---
 
 @app.route('/api/leaves', methods=['GET', 'POST'])
