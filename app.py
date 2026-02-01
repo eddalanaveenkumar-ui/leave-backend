@@ -231,7 +231,7 @@ def leaves():
         return jsonify([serialize_doc(leave) for leave in leaves_list])
 
 @app.route('/api/leaves/<leave_id>/status', methods=['PUT'])
-def update_leave_status():
+def update_leave_status(leave_id):
     data = request.json
     new_status = data.get('status')
     role = data.get('role') # advisor or hod
