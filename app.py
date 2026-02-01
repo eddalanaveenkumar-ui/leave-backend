@@ -174,7 +174,7 @@ def manage_staff():
         elif role == 'hod': target_col = hods_col
         elif role == 'management': target_col = management_col
         
-        if not target_col:
+        if target_col is None:
             return jsonify({"error": "Invalid role"}), 400
             
         # Check for duplicate ID
