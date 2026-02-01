@@ -326,6 +326,20 @@ def fix_departments():
         if dept and dept in mapping:
             leaves_col.update_one({'_id': doc['_id']}, {'$set': {'dept': mapping[dept]}})
             count += 1
+
+    # Fix Advisors
+    for doc in advisors_col.find():
+        dept = doc.get('dept')
+        if dept and dept in mapping:
+            advisors_col.update_one({'_id': doc['_id']}, {'$set': {'dept': mapping[dept]}})
+            count += 1
+
+    # Fix HODs
+    for doc in hods_col.find():
+        dept = doc.get('dept')
+        if dept and dept in mapping:
+            hods_col.update_one({'_id': doc['_id']}, {'$set': {'dept': mapping[dept]}})
+            count += 1
             
     return jsonify({"message": f"Fixed {count} records"}), 200
 
