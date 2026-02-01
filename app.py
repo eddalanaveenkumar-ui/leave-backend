@@ -224,7 +224,10 @@ def leaves():
         if dept and dept != 'null': query['dept'] = dept
         if status: query['status'] = status
         
+        print(f"DEBUG: Leaves Query: {query}")
         leaves_list = list(leaves_col.find(query).sort('appliedDate', -1))
+        print(f"DEBUG: Found {len(leaves_list)} leaves")
+
         return jsonify([serialize_doc(leave) for leave in leaves_list])
 
 @app.route('/api/leaves/<leave_id>/status', methods=['PUT'])
@@ -297,6 +300,34 @@ def reset_data():
     # Re-seed default staff
     seed_data()
     return jsonify({"message": "All data reset"}), 200
+
+@app.route('/api/fix-departments', methods=['POST'])
+def fix_departments():
+    mapping = {
+        "Computer Science": "CSC", "Computer Science & Engineering": "CSC", "CSE": "CSC",
+        "Electronics": "ECE", "Electronics & Communication": "ECE",
+        "Information Technology": "IT",
+        "Mechanical": "MECHANICAL", "Mechanical Engineering": "MECHANICAL",
+        "Electrical": "EEE", "Electrical & Electronics": "EEE",
+        "Artificial Intelligence": "AI&ML", "Cyber Security": "CYBER"
+    }
+    
+    count = 0
+    # Fix Students
+    for doc in students_col.find():
+        dept = doc.get('dept')
+        if dept and dept in mapping:
+            students_col.update_one({'_id': doc['_id']}, {'$set': {'dept': mapping[dept]}})
+            count += 1
+            
+    # Fix Leaves
+    for doc in leaves_col.find():
+        dept = doc.get('dept')
+        if dept and dept in mapping:
+            leaves_col.update_one({'_id': doc['_id']}, {'$set': {'dept': mapping[dept]}})
+            count += 1
+            
+    return jsonify({"message": f"Fixed {count} records"}), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
