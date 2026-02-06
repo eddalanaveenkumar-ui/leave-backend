@@ -5,8 +5,19 @@ from bson.objectid import ObjectId
 import os
 import datetime
 from dotenv import load_dotenv
+import firebase_admin
+from firebase_admin import credentials, messaging
 
 load_dotenv()
+
+# Initialize Firebase
+if not firebase_admin._apps:
+    try:
+        cred = credentials.Certificate("serviceAccountKey.json")
+        firebase_admin.initialize_app(cred)
+        print("Firebase Admin Initialized")
+    except Exception as e:
+        print(f"Firebase Init Error: {e}")
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -197,6 +208,20 @@ def manage_staff():
 
 # --- Leave Routes ---
 
+@app.route('/api/student/fcm', methods=['POST'])
+def update_fcm():
+    data = request.json
+    reg_no = data.get('regNo')
+    token = data.get('token')
+    
+    if reg_no and token:
+        students_col.update_one(
+            {'regNo': reg_no},
+            {'$set': {'fcmToken': token}}
+        )
+        return jsonify({"message": "Token updated"}), 200
+    return jsonify({"error": "Missing data"}), 400
+
 @app.route('/api/leaves', methods=['GET', 'POST'])
 def leaves():
     if request.method == 'POST':
@@ -248,6 +273,29 @@ def update_leave_status(leave_id):
         {'_id': ObjectId(leave_id)},
         {'$set': update_fields}
     )
+    
+    # Send Notification to Student
+    try:
+        leave = leaves_col.find_one({'_id': ObjectId(leave_id)})
+        student = students_col.find_one({'regNo': leave.get('regNo')})
+        fcm_token = student.get('fcmToken')
+        
+        if fcm_token:
+            title = f"Leave {new_status}"
+            body = f"Your leave application has been {new_status} by {role}."
+            
+            message = messaging.Message(
+                notification=messaging.Notification(
+                    title=title,
+                    body=body,
+                ),
+                token=fcm_token,
+            )
+            response = messaging.send(message)
+            print("Successfully sent message:", response)
+    except Exception as e:
+        print("Error sending notification:", e)
+
     return jsonify({"message": "Status updated"}), 200
 
 # --- Data Management Routes ---
